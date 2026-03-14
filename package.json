@@ -1,0 +1,13 @@
+{
+  "name": "scrollsmart-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx concurrently -c \"blue,green\" -n \"BACKEND,FRONTEND\" \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && .\\venv\\Scripts\\python -m uvicorn main:app --reload --port 8000",
+    "start:frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
