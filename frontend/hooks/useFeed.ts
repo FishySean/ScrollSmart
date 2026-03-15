@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api, FeedCard } from "@/lib/api";
 
-const MIN_BUFFER_SIZE = 2; // Always keep 2 cards ahead in the buffer
+const MIN_BUFFER_SIZE = 3; // Always keep 3 cards ahead in the buffer
 
 export function useFeed(userId: string) {
   const router = useRouter();
