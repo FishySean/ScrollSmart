@@ -92,7 +92,7 @@ export default function OnboardingPage() {
 
             <form
               onSubmit={handleRegisterNext}
-              className="space-y-4 rounded-[28px] border border-white/15 bg-[rgba(8,8,20,0.34)] px-5 py-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+              className="mt-[18vh] md:mt-[20vh] space-y-4 rounded-[28px] border border-white/15 bg-[rgba(8,8,20,0.34)] px-5 py-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
             >
               <div>
                 <label className="block text-sm text-white/80 mb-1.5 font-medium">Email</label>

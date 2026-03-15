@@ -1,183 +1,243 @@
 # ScrollSmart
 
-TikTok 风格的 AI 知识卡片应用。用户上下滑动浏览卡片，每张卡片是一个由 AI 主动发起的知识聊天，内容根据用户兴趣实时个性化生成，并随着互动不断学习调整。
+ScrollSmart is a TikTok-style AI knowledge feed. Instead of short entertainment videos, users scroll through AI-generated knowledge cards that adapt to their interests over time.
 
----
+The goal of the project is to turn doomscrolling into something more meaningful: users still get a smooth, swipe-driven experience, but each card teaches them something new, encourages curiosity, and helps them discover what they are actually interested in.
 
-## 产品逻辑
+## What the project does
 
-1. 用户注册时选择感兴趣的话题，系统初始化兴趣权重档案
-2. 双 Agent 系统为用户生成个性化卡片：
-   - **Agent 2（分析师）** 根据用户历史互动，更新兴趣档案，并用 80/20 规则决定下一张卡片的话题
-   - **Agent 1（内容生成）** 接收话题和用户档案摘要，生成吸引人的开场 "钩子" 消息
-3. 用户可以在卡片内直接聊天深入探讨，点击 Go Deeper 自动发起进阶提问
-4. Profile 页面展示兴趣雷达图，随互动实时变化
+ScrollSmart combines three ideas:
 
----
+- a short-form scrolling interface like TikTok
+- personalized AI-generated educational content
+- a live interest profile that evolves as the user interacts
 
-## 项目结构
+Users can:
 
-```
+- register and choose topics they are curious about
+- scroll through personalized knowledge cards
+- like, dislike, or skip content
+- click `Go Deeper` to continue exploring a topic
+- ask follow-up questions in a chat box
+- open a live profile view to see how their topic interests are changing
+
+## Why it is interesting
+
+Most AI products are reactive: users must already know what they want to ask.
+ScrollSmart is different. It proactively starts the learning experience, gives the user something interesting to react to, and then helps them discover better questions through interaction.
+
+This makes it a useful experiment in AI + education + recommendation design.
+
+## How it works
+
+### 1. Topic onboarding
+
+When a user signs up, they choose at least 3 topics they care about.
+Those choices initialize the user's interest profile.
+
+### 2. Two-agent backend flow
+
+The backend uses two separate AI roles:
+
+- Agent 2: analyzes user preferences and chooses the next topic
+- Agent 1: generates the actual card content for that topic
+
+### 3. Interest learning
+
+The system updates topic weights based on how the user behaves:
+
+- `Like`
+- `Dislike / Skip`
+- `Go Deeper`
+- chat depth
+- time spent on a card
+
+### 4. Explore vs exploit
+
+Topic selection follows an 80/20 strategy:
+
+- 80% of the time, the system chooses from stronger-interest topics
+- 20% of the time, it explores weaker topics to avoid getting repetitive
+
+### 5. Live profile visualization
+
+The profile view shows:
+
+- a radar chart of topic interest
+- topic weights as percentages
+
+This makes the recommendation system more visible and interpretable to the user.
+
+## Tech stack
+
+- Frontend: Next.js 14, TypeScript, Tailwind CSS, Framer Motion, Recharts
+- Backend: FastAPI, Python
+- AI: OpenAI API
+- Storage: in-memory Python dictionaries
+
+## Project structure
+
+```text
 ScrollSmart/
-├── frontend/                        # Next.js 14 前端
+├── frontend/
 │   ├── app/
-│   │   ├── page.tsx                 # 根路由（自动跳转）
-│   │   ├── onboarding/page.tsx      # 注册 + 话题选择
-│   │   ├── feed/page.tsx            # 主 Feed 页面
-│   │   └── profile/page.tsx         # 兴趣雷达图页面
+│   │   ├── onboarding/page.tsx
+│   │   ├── feed/page.tsx
+│   │   ├── profile/page.tsx
+│   │   └── layout.tsx
 │   ├── components/
-│   │   ├── FeedContainer.tsx        # Feed 滚动逻辑 + 预加载
-│   │   ├── KnowledgeCard.tsx        # 单张卡片（打字机动效）
-│   │   ├── ChatInterface.tsx        # 卡片内聊天
-│   │   ├── ActionButtons.tsx        # 👍 👎 🔍 按钮
-│   │   └── TopicSelector.tsx        # 话题选择网格
-│   └── lib/
-│       └── api.ts                   # 后端 API 客户端封装
-│
-├── backend/                         # Python FastAPI 后端
-│   ├── main.py                      # 入口 + CORS 配置
+│   │   ├── FeedContainer.tsx
+│   │   ├── KnowledgeCard.tsx
+│   │   ├── ChatInterface.tsx
+│   │   ├── InterestProfilePanel.tsx
+│   │   └── TopicSelector.tsx
+│   └── lib/api.ts
+├── backend/
+│   ├── main.py
 │   ├── app/
-│   │   ├── api/routes.py            # 全部 5 个 API 端点
+│   │   ├── api/routes.py
 │   │   ├── agents/
-│   │   │   ├── agent1_content.py    # Agent 1：内容生成
-│   │   │   ├── agent2_analyst.py    # Agent 2：兴趣分析
-│   │   │   └── pipeline.py          # 两个 Agent 的调用管道
+│   │   │   ├── agent1_content.py
+│   │   │   ├── agent2_analyst.py
+│   │   │   └── pipeline.py
 │   │   └── models/
-│   │       ├── storage.py           # 内存存储 + 权重更新逻辑
-│   │       ├── topic_selector.py    # 80/20 话题选择算法
-│   │       └── schemas.py           # Pydantic 数据模型
-│   ├── requirements.txt
-│   └── test_models.py               # 单元测试
-│
-├── start.sh                         # 一键启动脚本
+│   │       ├── storage.py
+│   │       ├── topic_selector.py
+│   │       └── schemas.py
+│   └── test_models.py
+├── start.sh
 └── README.md
 ```
 
----
+## Requirements
 
-## 本地运行
+Before running the project, make sure you have:
 
-### 前提条件
+- Node.js 18 or newer
+- Python 3.11 or newer
+- an OpenAI API key
 
-- Node.js 18+
-- Python 3.11+
-- OpenAI API Key（需要有余额）
+## How to run the project after downloading or cloning it
 
-### 第一次配置
+### Option 1: easiest workflow
 
-**后端：**
+Set up the backend and frontend once, then use the root start script.
+
+### Backend setup
+
 ```bash
 cd backend
 python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-# 编辑 .env，填入你的 OpenAI API Key
 ```
 
-**前端：**
+Create `backend/.env`.
+You can either copy from `backend/.env.example` or create it manually.
+At minimum, it should contain:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+### Frontend setup
+
 ```bash
 cd frontend
 npm install
 cp .env.local.example .env.local
-# .env.local 默认指向 http://localhost:8000，不需要改
 ```
 
-### 启动
+The frontend uses `NEXT_PUBLIC_API_URL` from `.env.local`.
+For local development it should point to:
 
-需要开两个终端窗口：
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
-**终端 1 — 后端：**
+### Start both servers
+
+From the project root:
+
+```bash
+bash start.sh
+```
+
+Then open:
+
+- Frontend: `http://localhost:3000`
+- Backend health check: `http://localhost:8000/health`
+- API docs: `http://localhost:8000/docs`
+
+## How to run manually in two terminals
+
+If you prefer to see backend and frontend separately, use two terminal windows.
+
+### Terminal 1: backend
+
 ```bash
 cd backend
 source venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
-**终端 2 — 前端：**
+### Terminal 2: frontend
+
 ```bash
 cd frontend
 npm run dev
 ```
 
-打开浏览器访问 **http://localhost:3000**
+Then open `http://localhost:3000`.
 
----
+## Main API endpoints
 
-## API 接口
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/register` | Create a user and initialize the interest profile |
+| `POST` | `/api/feed/next` | Generate the next feed card |
+| `POST` | `/api/feed/engage` | Send card interaction data and update the profile |
+| `POST` | `/api/chat/message` | Continue the conversation on a card |
+| `GET` | `/api/profile/{user_id}` | Get the user's interest profile |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/register` | 注册用户，初始化兴趣档案 |
-| POST | `/api/feed/next` | 生成下一张卡片（Agent 2 → Agent 1）|
-| POST | `/api/feed/engage` | 提交互动数据，更新兴趣档案 |
-| POST | `/api/chat/message` | 卡片内聊天（调用 Agent 1）|
-| GET  | `/api/profile/{user_id}` | 获取兴趣档案和排名 |
+## Notes and limitations
 
-完整接口文档（Swagger UI）：**http://localhost:8000/docs**
+- This project uses in-memory storage only.
+- If the backend restarts, user data is lost.
+- Because of that, you may need to register again after restarting the backend.
+- The app depends on a working OpenAI API key.
+- If the page loads forever, the most common cause is that the backend is not running or the API key is missing/invalid.
 
----
+## Quick troubleshooting
 
-## 核心算法
+### The frontend says `next: command not found`
 
-### 兴趣权重更新规则
+Run:
 
-每次互动后，对应话题的权重按以下规则调整：
-
-| 行为 | 权重变化 |
-|------|---------|
-| 点赞 | +0.15 |
-| 点踩 | −0.10 |
-| 点 Go Deeper | +0.20 |
-| 每条聊天消息 | +0.05（上限 +0.30）|
-| 停留超过 30 秒 | +0.10 |
-
-权重范围：`0.05 ~ 1.0`，定期软归一化防止全部收敛到 1.0
-
-### 80/20 话题选择
-
-- **80% 利用**：从权重最高的一半话题中加权随机选取
-- **20% 探索**：从权重较低或未见过的话题中随机选取
-
-### 双 Agent 设计
-
-两个 Agent 使用完全独立的 OpenAI 客户端和系统提示词，互不共享上下文：
-
-```
-用户互动数据
-     ↓
-[Agent 2 — 分析师]
-  · 更新兴趣档案权重
-  · 生成档案自然语言摘要
-  · 用 80/20 选择下一个话题
-     ↓
-话题 + 档案摘要
-     ↓
-[Agent 1 — 内容生成]
-  · 生成个性化开场钩子消息
-  · 处理后续聊天对话
-     ↓
-卡片数据返回前端
+```bash
+cd frontend
+npm install
 ```
 
----
+### The backend says `venv/bin/activate: No such file or directory`
 
-## 技术栈
+Run:
 
-| 层 | 技术 |
-|----|------|
-| 前端框架 | Next.js 14 (App Router) + TypeScript |
-| 样式 | Tailwind CSS |
-| 动画 | Framer Motion |
-| 数据可视化 | Recharts（雷达图）|
-| 后端框架 | FastAPI + Python |
-| AI | OpenAI API (gpt-4o-mini) |
-| 存储 | 内存（Python dict，hackathon 用，无数据库）|
+```bash
+cd backend
+python3 -m venv venv
+```
 
----
+### The app keeps spinning
 
-## 注意事项
+Check:
 
-- `.env` 文件包含 API Key，**绝对不能提交到 git**（已在 `.gitignore` 中排除）
-- 后端是内存存储，重启后所有用户数据清空，前端会自动跳回注册页
-- 每次后端重启后，浏览器需要重新注册（或清除 localStorage）
+- is the backend running on port 8000?
+- is `backend/.env` present?
+- is `OPENAI_API_KEY` valid?
+
+## License / project status
+
+This is a hackathon-style project and prototype.
+It is designed to demonstrate the product idea, recommendation logic, and AI interaction flow rather than production-grade persistence or authentication.
