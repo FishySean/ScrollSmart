@@ -37,11 +37,16 @@ export default function ChatInterface({
     pregeneratedElaboration || null
   );
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, [messages]);
 
   // Auto-send when Go Deeper is triggered
@@ -141,7 +146,10 @@ export default function ChatInterface({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Message history */}
-      <div className="flex-1 overflow-y-auto chat-scroll space-y-3 py-2 px-1 min-h-0">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto chat-scroll space-y-3 py-2 px-1 min-h-0"
+      >
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
             <motion.div
@@ -184,7 +192,6 @@ export default function ChatInterface({
             </div>
           </motion.div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}

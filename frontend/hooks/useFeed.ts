@@ -80,6 +80,10 @@ export function useFeed(userId: string) {
     setCurrentIndex((prev) => prev + 1);
   }, []);
 
+  const goPrev = useCallback(() => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+
   const currentCard = cardBuffer[currentIndex] || null;
   const nextCardReady = cardBuffer.length > currentIndex + 1;
 
@@ -89,6 +93,8 @@ export function useFeed(userId: string) {
     loadingInitial,
     nextCardReady,
     goNext,
+    goPrev,
+    cardBuffer,
     bufferLength: cardBuffer.length,
   };
 }

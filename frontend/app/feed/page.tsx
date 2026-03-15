@@ -63,23 +63,6 @@ export default function FeedPage() {
         </motion.div>
       </div>
 
-      {/* Scroll hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 0.5 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1 pointer-events-none"
-      >
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ repeat: 3, duration: 1.2, ease: "easeInOut" }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white/20">
-            <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </motion.div>
-      </motion.div>
-
       <FeedContainer userId={userId} />
     </div>
   );
