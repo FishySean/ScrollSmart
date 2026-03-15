@@ -9,7 +9,7 @@ Flow:
 """
 
 import uuid
-from .agent1_content import generate_hook, continue_conversation
+from .agent1_content import generate_hook_and_elaboration, continue_conversation
 from .agent2_analyst import get_next_topic_and_summary, analyze_and_update_profile
 
 
@@ -22,7 +22,7 @@ def generate_next_card(user_id: str) -> dict:
     """
     next_topic, profile_summary = get_next_topic_and_summary(user_id)
 
-    hook_message = generate_hook(
+    combined = generate_hook_and_elaboration(
         topic=next_topic,
         profile_summary=profile_summary,
     )
@@ -30,7 +30,8 @@ def generate_next_card(user_id: str) -> dict:
     return {
         "card_id": str(uuid.uuid4()),
         "topic": next_topic,
-        "hook_message": hook_message,
+        "hook_message": combined["hook_message"],
+        "pregenerated_elaboration": combined["elaboration"],
     }
 
 

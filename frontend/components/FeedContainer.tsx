@@ -1,34 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import KnowledgeCard, { CardData } from "./KnowledgeCard";
+import KnowledgeCard from "./KnowledgeCard";
 import { api } from "@/lib/api";
+import { useFeed } from "@/hooks/useFeed";
 
 interface FeedContainerProps {
   userId: string;
 }
 
-const MAX_CARDS = 30;
-
 export default function FeedContainer({ userId }: FeedContainerProps) {
-  const router = useRouter();
+  const { currentCard, currentIndex, loadingInitial, nextCardReady, goNext } = useFeed(userId);
 
-  // The card currently on screen
-  const [currentCard, setCurrentCard] = useState<CardData | null>(null);
-  // The next card — pre-fetched silently while user reads current
-  const [nextCard, setNextCard] = useState<CardData | null>(null);
-  // History of cards the user has seen (for engagement tracking)
-  const [cardIndex, setCardIndex] = useState(0);
-
-  const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
-  const [nextLoading, setNextLoading] = useState(false);
-
-  const isFetchingRef = useRef(false);
-  const totalFetchedRef = useRef(0);
   const transitioningRef = useRef(false); // sync ref to avoid stale closure
+  
   const engagementRef = useRef({
     liked: false,
     disliked: false,
@@ -37,59 +24,20 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
     start_time: Date.now(),
   });
 
-  const fetchCard = useCallback(async (): Promise<CardData | null> => {
-    if (isFetchingRef.current) return null;
-    if (totalFetchedRef.current >= MAX_CARDS) return null;
-
-    isFetchingRef.current = true;
-    try {
-      const card = await api.getNextCard(userId);
-      totalFetchedRef.current += 1;
-      return card;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("404") || msg.includes("not found")) {
-        localStorage.clear();
-        router.replace("/onboarding");
-      }
-      return null;
-    } finally {
-      isFetchingRef.current = false;
-    }
-  }, [userId, router]);
-
-  // Pre-fetch next card silently in background
-  const prefetchNext = useCallback(async () => {
-    if (nextCard) return; // already have one ready
-    setNextLoading(true);
-    const card = await fetchCard();
-    if (card) setNextCard(card);
-    setNextLoading(false);
-  }, [nextCard, fetchCard]);
-
-  // Initial load
+  // Track start time whenever the active card index changes
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      const first = await fetchCard();
-      if (first) {
-        setCurrentCard(first);
-        engagementRef.current.start_time = Date.now();
-      }
-      setLoading(false);
-      // Immediately start pre-fetching next card in background
-      const second = await fetchCard();
-      if (second) setNextCard(second);
+    engagementRef.current = {
+      liked: false,
+      disliked: false,
+      went_deeper: false,
+      message_count: 0,
+      start_time: Date.now(),
     };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentIndex]);
 
-  // Advance to next card (called only by user interaction)
-  const goNext = useCallback(async () => {
+  const handleNext = useCallback(async () => {
     if (transitioningRef.current) return;
-    if (!nextCard && !nextLoading) return; // nothing ready yet
-    if (!nextCard) return; // still loading, wait
+    if (!nextCardReady) return; // Wait for the buffer
 
     transitioningRef.current = true;
     setTransitioning(true);
@@ -111,28 +59,13 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
       } catch { /* non-critical */ }
     }
 
-    // Swap cards
-    setCurrentCard(nextCard);
-    setNextCard(null);
-    setCardIndex((i) => i + 1);
-
-    // Reset engagement tracking
-    engagementRef.current = {
-      liked: false,
-      disliked: false,
-      went_deeper: false,
-      message_count: 0,
-      start_time: Date.now(),
-    };
+    goNext();
 
     setTimeout(() => {
       transitioningRef.current = false;
       setTransitioning(false);
     }, 450);
-
-    // Pre-fetch next card for after this one
-    setTimeout(() => prefetchNext(), 500);
-  }, [nextCard, nextLoading, currentCard, userId, prefetchNext]);
+  }, [nextCardReady, currentCard, userId, goNext]);
 
   // Listen for: mouse wheel, keyboard arrows/space, touch swipe
   useEffect(() => {
@@ -142,7 +75,7 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
     const onWheel = (e: WheelEvent) => {
       if (e.deltaY > 30 && !wheelCooldown) {
         wheelCooldown = true;
-        goNext();
+        handleNext();
         setTimeout(() => { wheelCooldown = false; }, 800);
       }
     };
@@ -150,7 +83,7 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (["ArrowDown", "ArrowRight", "Space", " ", "PageDown"].includes(e.key)) {
         e.preventDefault();
-        goNext();
+        handleNext();
       }
     };
 
@@ -160,7 +93,7 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
 
     const onTouchEnd = (e: TouchEvent) => {
       const delta = touchStartY - e.changedTouches[0].clientY;
-      if (delta > 50) goNext(); // swipe up
+      if (delta > 50) handleNext(); // swipe up
     };
 
     window.addEventListener("wheel", onWheel, { passive: true });
@@ -174,9 +107,9 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
     };
-  }, [goNext]);
+  }, [handleNext]);
 
-  if (loading || !currentCard) {
+  if (loadingInitial || !currentCard) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-[#0a0a1a] gap-4">
         <div className="w-10 h-10 border-2 border-[#6c63ff] border-t-transparent rounded-full animate-spin" />
@@ -200,7 +133,7 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
             card={currentCard}
             userId={userId}
             isActive={!transitioning}
-            onEngage={() => {}} // engagement sent in goNext()
+            onEngage={() => {}} // engagement sent in handleNext()
             onLikeChange={(v) => { engagementRef.current.liked = v; }}
             onDislikeChange={(v) => { engagementRef.current.disliked = v; }}
             onGoDeeperChange={(v) => { engagementRef.current.went_deeper = v; }}
@@ -211,12 +144,12 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
 
       {/* Scroll hint at bottom */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1 pointer-events-none">
-        {nextLoading ? (
+        {!nextCardReady ? (
           <div className="flex items-center gap-2 bg-black/30 rounded-full px-3 py-1.5">
             <div className="w-3 h-3 border border-[#6c63ff] border-t-transparent rounded-full animate-spin" />
             <span className="text-[#9999bb] text-xs">Loading next...</span>
           </div>
-        ) : nextCard ? (
+        ) : (
           <motion.div
             animate={{ y: [0, 5, 0] }}
             transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
@@ -226,7 +159,7 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
               <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </motion.div>
-        ) : null}
+        )}
       </div>
     </div>
   );

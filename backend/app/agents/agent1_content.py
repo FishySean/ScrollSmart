@@ -9,9 +9,15 @@ Does NOT share context or history with Agent 2.
 """
 
 import os
+import json
 from openai import OpenAI
+from pydantic import BaseModel
 
 _client: OpenAI | None = None
+
+class HookElaborationFormat(BaseModel):
+    hook_message: str
+    elaboration: str
 
 
 def _get_client() -> OpenAI:
@@ -47,35 +53,44 @@ When responding to user messages in ONGOING CONVERSATION:
 Remember: your goal is to make learning feel like the most exciting thing a person can do."""
 
 
-def generate_hook(topic: str, profile_summary: str, model: str = "gpt-4o-mini") -> str:
+def generate_hook_and_elaboration(topic: str, profile_summary: str, model: str = "gpt-4o-mini") -> dict:
     """
-    Generate the opening hook message for a knowledge card.
+    Generate the opening hook message AND the first elaboration for a knowledge card simultaneously.
 
     Args:
         topic: The topic for this card (e.g., "Neuroscience")
         profile_summary: Natural language description of user's interest profile
         model: OpenAI model to use
+        
+    Returns:
+        {"hook_message": str, "elaboration": str}
     """
     client = _get_client()
 
-    user_prompt = f"""Generate an opening hook message for a knowledge card about: {topic}
+    user_prompt = f"""Generate an opening hook message AND its immediate elaboration for a knowledge card about: {topic}
 
 User interest context: {profile_summary}
 
-Generate a hook that is surprising, counterintuitive, or fascinating about {topic}. 
-Make it feel personalized and relevant. 3-5 sentences max."""
+Task 1: Generate a hook that is surprising, counterintuitive, or fascinating about {topic}. Make it feel personalized and relevant. 3-5 sentences max.
+Task 2: Generate the immediate "Go Deeper" elaboration. If a user asked you to explain more about the hook, what is the next logical layer of depth? 4-6 sentences.
 
-    response = client.chat.completions.create(
+Return your response as a JSON object with 'hook_message' and 'elaboration' fields."""
+
+    response = client.beta.chat.completions.parse(
         model=model,
         messages=[
             {"role": "system", "content": AGENT1_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.9,
-        max_tokens=300,
+        max_tokens=800,
+        response_format=HookElaborationFormat,
     )
 
-    return response.choices[0].message.content or ""
+    result = response.choices[0].message.parsed
+    if result:
+        return {"hook_message": result.hook_message, "elaboration": result.elaboration}
+    return {"hook_message": "Fascinating topic!", "elaboration": "There is a lot to discuss here."}
 
 
 def continue_conversation(

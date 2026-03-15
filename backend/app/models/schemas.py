@@ -21,6 +21,7 @@ class FeedCard(BaseModel):
     card_id: str
     topic: str
     hook_message: str
+    pregenerated_elaboration: Optional[str] = None
 
 
 class EngageRequest(BaseModel):

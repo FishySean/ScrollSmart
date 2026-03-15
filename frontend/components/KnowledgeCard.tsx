@@ -37,6 +37,7 @@ export interface CardData {
   card_id: string;
   topic: string;
   hook_message: string;
+  pregenerated_elaboration?: string;
 }
 
 interface KnowledgeCardProps {
@@ -69,31 +70,14 @@ export default function KnowledgeCard({
   const [disliked, setDisliked] = useState(false);
   const [goDeeperTrigger, setGoDeeperTrigger] = useState<string | null>(null);
 
-  const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accentColor = TOPIC_COLORS[card.topic] || "#6c63ff";
 
-  // Typewriter effect — runs when card becomes active
+  // Display hook instantly when active
   useEffect(() => {
     if (!isActive) return;
 
-    setDisplayedHook("");
-    setHookDone(false);
-    let idx = 0;
-
-    const type = () => {
-      if (idx < card.hook_message.length) {
-        setDisplayedHook(card.hook_message.slice(0, idx + 1));
-        idx++;
-        typewriterRef.current = setTimeout(type, TYPEWRITER_SPEED_MS);
-      } else {
-        setHookDone(true);
-      }
-    };
-
-    typewriterRef.current = setTimeout(type, 300);
-    return () => {
-      if (typewriterRef.current) clearTimeout(typewriterRef.current);
-    };
+    setDisplayedHook(card.hook_message);
+    setHookDone(true);
   }, [isActive, card.hook_message]);
 
   const handleLike = () => {
@@ -178,6 +162,7 @@ export default function KnowledgeCard({
             cardId={card.card_id}
             topic={card.topic}
             hookMessage={card.hook_message}
+            pregeneratedElaboration={card.pregenerated_elaboration}
             onMessageSent={onMessageSent}
             goDeeperTrigger={goDeeperTrigger}
           />

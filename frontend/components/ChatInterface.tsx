@@ -14,21 +14,29 @@ interface ChatInterfaceProps {
   cardId: string;
   topic: string;
   hookMessage: string;
+  pregeneratedElaboration?: string | null;
   onMessageSent: () => void;
   goDeeperTrigger?: string | null;
 }
+
+const GO_DEEPER_PROMPT = "Please introduce me to a more advanced and deeper topic in this field";
 
 export default function ChatInterface({
   userId,
   cardId,
   topic,
   hookMessage,
+  pregeneratedElaboration,
   onMessageSent,
   goDeeperTrigger,
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [queuedElaboration, setQueuedElaboration] = useState<string | null>(
+    pregeneratedElaboration || null
+  );
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,16 +52,57 @@ export default function ChatInterface({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goDeeperTrigger]);
 
+  const fetchNextElaborationSilently = async (currentMessages: Message[]) => {
+    try {
+      const res = await api.sendMessage({
+        user_id: userId,
+        card_id: cardId,
+        topic,
+        message: GO_DEEPER_PROMPT,
+        chat_history: [
+          { role: "assistant" as const, content: hookMessage },
+          ...currentMessages,
+        ],
+      });
+      setQueuedElaboration(res.response);
+    } catch {
+      // Fail silently in the background
+    }
+  };
+
   const sendMessage = async (text?: string) => {
+    const isManual = !text;
     const messageText = text || input.trim();
     if (!messageText || loading) return;
 
-    const userMsg: Message = { role: "user", content: messageText };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput("");
-    setLoading(true);
     onMessageSent();
+    setInput("");
+
+    const userMsg: Message = { role: "user", content: messageText };
+    let newMessages = [...messages, userMsg];
+
+    // INSTANT ELABORATION: If we have a pregenerated chunk and it's a 'Go Deeper' action
+    if (!isManual && queuedElaboration) {
+      const elabText = queuedElaboration;
+      setQueuedElaboration(null); // Clear it so we don't reuse it
+
+      const assistantMsg: Message = { role: "assistant", content: elabText };
+      newMessages = [...newMessages, assistantMsg];
+      setMessages(newMessages);
+
+      // Now fetch what the *next* elaboration would be in the background
+      fetchNextElaborationSilently(newMessages);
+      return;
+    }
+
+    // MANUAL QUESTION OVERRIDE OR NO QUEUE: Standard fetch flow
+    if (isManual) {
+      // Discard current pregenerated elaboration because context changed
+      setQueuedElaboration(null);
+    }
+
+    setMessages(newMessages);
+    setLoading(true);
 
     try {
       const res = await api.sendMessage({
@@ -62,12 +111,16 @@ export default function ChatInterface({
         topic,
         message: messageText,
         chat_history: [
-          { role: "assistant", content: hookMessage },
-          ...newMessages.map((m) => ({ role: m.role, content: m.content })),
+          { role: "assistant" as const, content: hookMessage },
+          ...messages,
         ],
       });
 
-      setMessages([...newMessages, { role: "assistant", content: res.response }]);
+      const updatedMessages: Message[] = [...newMessages, { role: "assistant", content: res.response }];
+      setMessages(updatedMessages);
+
+      // We just completed a manual question or standard fetch, prepare the next elaboration based on this new context
+      fetchNextElaborationSilently(updatedMessages);
     } catch {
       setMessages([
         ...newMessages,
@@ -105,6 +158,8 @@ export default function ChatInterface({
                     : "bg-white/8 border border-white/8 text-[#e0e0f0] rounded-bl-sm"
                 }`}
               >
+                {/* Basic Typewriter mapping could go here if we want everything typed, 
+                    but for now standard message block */}
                 {msg.content}
               </div>
             </motion.div>

@@ -13,6 +13,7 @@ export interface FeedCard {
   card_id: string;
   topic: string;
   hook_message: string;
+  pregenerated_elaboration?: string;
 }
 
 export interface EngageResponse {
