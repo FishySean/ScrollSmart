@@ -16,3 +16,10 @@ frontend/out/
 
 # macOS
 .DS_Store
+
+# Windows dedicated code & tools
+start.ps1
+Thumbs.db
+/package.json
+/package-lock.json
+/node_modules/
