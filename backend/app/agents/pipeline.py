@@ -31,6 +31,7 @@ def generate_next_card(user_id: str) -> dict:
         "card_id": str(uuid.uuid4()),
         "topic": next_topic,
         "hook_message": hook_message,
+        "music_name": "background_lofi_study_music",  # 可改为配置或 LLM 生成
     }
 
 

@@ -1,3 +1,21 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List
+
+router = APIRouter()
+
+
+class OnboardingData(BaseModel):
+    topics: List[str]
+
+
+@router.post("/onboarding")
+async def save_onboarding_topics(data: OnboardingData):
+
+    print(f"用户选择了这些主题: {data.topics}")
+    
+
+    return {"status": "success", "message": "Preferences saved!"}
 from fastapi import APIRouter, HTTPException
 from ..models.schemas import (
     RegisterRequest, RegisterResponse,

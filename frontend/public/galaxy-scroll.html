@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galaxy Particle Background</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      background: #030308;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    #canvas-container canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module">
+    /**
+     * Galaxy particle background — scroll & mouse interactive.
+     * Integration: embed via <iframe src="/galaxy-scroll.html">.
+     * To drive camera by parent page scroll: postMessage(iframe, { scroll: 0..1 }, '*')
+     */
+    import * as THREE from 'three';
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x030308);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(0, 0, 28);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const clock = new THREE.Clock();
+
+    // ---- Spiral galaxy particle layout (larger & brighter so it shows through) ----
+    const PARTICLE_COUNT = 3800;
+    const ARM_COUNT = 4;
+    const SPIRAL_TURNS = 2.2;
+    const SPREAD = 4.2;
+    const CORE_RADIUS = 0.8;
+
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const origPositions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
+    const randoms = new Float32Array(PARTICLE_COUNT * 2); // [armOffset, size/phase]
+
+    const palette = [
+      new THREE.Color(0x6b7fff),
+      new THREE.Color(0x8b5cf6),
+      new THREE.Color(0xa78bfa),
+      new THREE.Color(0x818cf8),
+      new THREE.Color(0xc4b5fd),
+      new THREE.Color(0xffffff),
+      new THREE.Color(0x93c5fd),
+      new THREE.Color(0xbfdbfe),
+    ];
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const arm = Math.floor(Math.random() * ARM_COUNT);
+      const t = Math.random();
+      const angle = (arm / ARM_COUNT) * Math.PI * 2 + t * Math.PI * 2 * SPIRAL_TURNS + (Math.random() - 0.5) * 0.8;
+      const r = CORE_RADIUS + t * SPREAD + (Math.random() - 0.5) * 0.5;
+      const x = r * Math.cos(angle);
+      const y = r * Math.sin(angle);
+      const z = (Math.random() - 0.5) * 4;
+
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+      origPositions[i * 3] = x;
+      origPositions[i * 3 + 1] = y;
+      origPositions[i * 3 + 2] = z;
+
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+
+      randoms[i * 2] = angle;
+      randoms[i * 2 + 1] = Math.random();
+    }
+
+    const galaxyGeom = new THREE.BufferGeometry();
+    galaxyGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    galaxyGeom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    galaxyGeom.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 2));
+
+    const galaxyMat = new THREE.PointsMaterial({
+      size: 0.14,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.92,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const galaxy = new THREE.Points(galaxyGeom, galaxyMat);
+    scene.add(galaxy);
+
+    // ---- Distant star field (appears as you scroll "into" the galaxy) ----
+    const FAR_COUNT = 800;
+    const farGeom = new THREE.BufferGeometry();
+    const farPos = new Float32Array(FAR_COUNT * 3);
+    const farColors = new Float32Array(FAR_COUNT * 3);
+    for (let i = 0; i < FAR_COUNT; i++) {
+      farPos[i * 3] = (Math.random() - 0.5) * 60;
+      farPos[i * 3 + 1] = (Math.random() - 0.5) * 60;
+      farPos[i * 3 + 2] = -15 - Math.random() * 35;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      farColors[i * 3] = c.r;
+      farColors[i * 3 + 1] = c.g;
+      farColors[i * 3 + 2] = c.b;
+    }
+    farGeom.setAttribute('position', new THREE.BufferAttribute(farPos, 3));
+    farGeom.setAttribute('color', new THREE.BufferAttribute(farColors, 3));
+    const farStars = new THREE.Points(farGeom, new THREE.PointsMaterial({
+      size: 0.12,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.5,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    scene.add(farStars);
+
+    // ---- Mouse & scroll state ----
+    let scrollProgress = 0;
+    let targetScroll = 0;
+    const mouse = { x: 0.5, y: 0.5 };
+    const smoothMouse = { x: 0.5, y: 0.5 };
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX / window.innerWidth;
+      mouse.y = 1 - e.clientY / window.innerHeight;
+    });
+
+    window.addEventListener('scroll', () => {
+      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+      targetScroll = window.scrollY / maxScroll;
+    }, { passive: true });
+
+    window.addEventListener('message', (e) => {
+      if (e.data && typeof e.data.scroll === 'number') {
+        targetScroll = Math.max(0, Math.min(1, e.data.scroll));
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const dt = Math.min(clock.getDelta(), 0.1);
+
+      scrollProgress += (targetScroll - scrollProgress) * 0.04;
+      smoothMouse.x += (mouse.x - smoothMouse.x) * 0.06;
+      smoothMouse.y += (mouse.y - smoothMouse.y) * 0.06;
+
+      // Camera flies through galaxy: start far, end past the plane
+      const camZ = 28 - scrollProgress * 42;
+      camera.position.z = camZ;
+      camera.lookAt(0, 0, camZ - 5);
+
+      // Slow spiral rotation
+      galaxy.rotation.z = t * 0.018;
+      farStars.rotation.z = t * 0.012;
+
+      // Mouse disturbs particles: offset from original position based on distance to cursor
+      const mx = (smoothMouse.x - 0.5) * 2.5;
+      const my = (smoothMouse.y - 0.5) * 2.5;
+      const posAttr = galaxyGeom.attributes.position;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const ix = i * 3;
+        const px = origPositions[ix];
+        const py = origPositions[ix + 1];
+        const dx = mx - px;
+        const dy = my - py;
+        const dist = Math.sqrt(dx * dx + dy * dy) + 0.01;
+        const force = 0.022 / (1 + dist * 1.5);
+        posAttr.array[ix] = px + dx * force;
+        posAttr.array[ix + 1] = py + dy * force;
+        posAttr.array[ix + 2] = origPositions[ix + 2];
+      }
+      posAttr.needsUpdate = true;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

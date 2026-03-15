@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Particle Nebula — ScrollSmart</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* 星空 + 湖水渐变背景 */
+    body {
+      background: linear-gradient(
+        180deg,
+        #050510 0%,
+        #0a0a2e 15%,
+        #0d1238 40%,
+        #0a0a35 65%,
+        #080825 78%,
+        #060618 85%,
+        #04081a 92%,
+        #030616 100%
+      );
+    }
+
+    /* 湖水由 Three.js 渲染，此处不再用 CSS 层 */
+
+    /* 稀疏星星 — 闪烁 */
+    .stars-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+      animation: starTwinkle 3s ease-in-out infinite;
+    }
+
+    @keyframes starTwinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    /* 棉花糖彩云 — 飘絮感 */
+    .clouds-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .cloud {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.25;
+      animation: cloudDrift 25s ease-in-out infinite;
+    }
+
+    @keyframes cloudDrift {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+      25% { transform: translate(30px, -15px) scale(1.05); opacity: 0.3; }
+      50% { transform: translate(-20px, 10px) scale(0.95); opacity: 0.25; }
+      75% { transform: translate(15px, 5px) scale(1.02); opacity: 0.28; }
+    }
+
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    #canvas-container canvas { display: block; }
+  </style>
+</head>
+<body id="particle-planet-body">
+  <script>
+    (function() {
+      if (new URLSearchParams(location.search).get('overlay') === '1') {
+        var s = document.createElement('style');
+        s.textContent = 'html, body { background: transparent !important; }';
+        (document.head || document.documentElement).appendChild(s);
+        document.body.style.background = 'transparent';
+      }
+    })();
+  </script>
+  <!-- 闪烁星星 -->
+  <div class="stars-layer" id="stars-layer"></div>
+
+  <!-- 棉花糖彩云 -->
+  <div class="clouds-layer" id="clouds-layer"></div>
+
+  <!-- Three.js 星球 + 星云 -->
+  <div id="canvas-container"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // ===== 稀疏星星 =====
+    const starsLayer = document.getElementById('stars-layer');
+    const starCount = 80;
+    for (let i = 0; i < starCount; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 75 + '%';
+      star.style.animationDelay = Math.random() * 3 + 's';
+      star.style.animationDuration = (2 + Math.random() * 3) + 's';
+      starsLayer.appendChild(star);
+    }
+
+    // ===== 棉花糖彩云 =====
+    const cloudsLayer = document.getElementById('clouds-layer');
+    const cloudConfigs = [
+      { x: 15, y: 20, w: 180, h: 80, c: 'rgba(139, 92, 246, 0.4)' },
+      { x: 55, y: 35, w: 220, h: 100, c: 'rgba(129, 140, 248, 0.35)' },
+      { x: 75, y: 15, w: 160, h: 70, c: 'rgba(167, 139, 250, 0.3)' },
+      { x: 30, y: 50, w: 200, h: 90, c: 'rgba(108, 99, 255, 0.25)' },
+      { x: 70, y: 55, w: 150, h: 65, c: 'rgba(139, 92, 246, 0.3)' },
+    ];
+    cloudConfigs.forEach((cfg, i) => {
+      const cloud = document.createElement('div');
+      cloud.className = 'cloud';
+      cloud.style.left = cfg.x + '%';
+      cloud.style.top = cfg.y + '%';
+      cloud.style.width = cfg.w + 'px';
+      cloud.style.height = cfg.h + 'px';
+      cloud.style.background = cfg.c;
+      cloud.style.animationDelay = (i * 4) + 's';
+      cloud.style.animationDuration = (20 + Math.random() * 15) + 's';
+      cloudsLayer.appendChild(cloud);
+    });
+
+    // ===== Three.js =====
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
+
+    const clock = new THREE.Clock();
+
+    const PLANET_PARTICLES = 2800;
+    const planetGeom = new THREE.BufferGeometry();
+    const planetPositions = new Float32Array(PLANET_PARTICLES * 3);
+    const planetColors = new Float32Array(PLANET_PARTICLES * 3);
+    const planetRandoms = new Float32Array(PLANET_PARTICLES);
+    const bluePurplePalette = [
+      new THREE.Color(0x818cf8), new THREE.Color(0x6c63ff), new THREE.Color(0x8b5cf6),
+      new THREE.Color(0xa855f7), new THREE.Color(0x6366f1), new THREE.Color(0x06b6d4), new THREE.Color(0x3b82f6)
+    ];
+
+    for (let i = 0; i < PLANET_PARTICLES; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 0.45 + Math.random() * 0.15;
+      planetPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      planetPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      planetPositions[i * 3 + 2] = r * Math.cos(phi);
+      const c = bluePurplePalette[Math.floor(Math.random() * bluePurplePalette.length)];
+      planetColors[i * 3] = c.r;
+      planetColors[i * 3 + 1] = c.g;
+      planetColors[i * 3 + 2] = c.b;
+      planetRandoms[i] = Math.random();
+    }
+
+    planetGeom.setAttribute('position', new THREE.BufferAttribute(planetPositions, 3));
+    planetGeom.setAttribute('color', new THREE.BufferAttribute(planetColors, 3));
+    planetGeom.setAttribute('aRandom', new THREE.BufferAttribute(planetRandoms, 1));
+
+    const planet = new THREE.Points(planetGeom, new THREE.PointsMaterial({
+      size: 0.035, vertexColors: true, transparent: true, opacity: 0.92,
+      sizeAttenuation: true, blending: THREE.AdditiveBlending,
+    }));
+    scene.add(planet);
+
+    const NEBULA_COUNT = 950;
+    const nebulaGeom = new THREE.BufferGeometry();
+    const nebulaPos = new Float32Array(NEBULA_COUNT * 3);
+    const nebulaColors = new Float32Array(NEBULA_COUNT * 3);
+    const nebulaCol = new THREE.Color(0xffffff);
+    for (let i = 0; i < NEBULA_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 1.1 + Math.random() * 0.55;
+      nebulaPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      nebulaPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      nebulaPos[i * 3 + 2] = r * Math.cos(phi);
+      nebulaColors[i * 3] = nebulaCol.r;
+      nebulaColors[i * 3 + 1] = nebulaCol.g;
+      nebulaColors[i * 3 + 2] = nebulaCol.b;
+    }
+    nebulaGeom.setAttribute('position', new THREE.BufferAttribute(nebulaPos, 3));
+    nebulaGeom.setAttribute('color', new THREE.BufferAttribute(nebulaColors, 3));
+    const nebula = new THREE.Points(nebulaGeom, new THREE.PointsMaterial({
+      size: 0.02, vertexColors: true, transparent: true, opacity: 0.6,
+      sizeAttenuation: true, blending: THREE.AdditiveBlending,
+    }));
+    scene.add(nebula);
+
+    // ===== Three.js 厚云层 — 淡蓝+粉，湖面上方 =====
+    const cloudGroup = new THREE.Group();
+    const cloudColors = [
+      new THREE.Color(0xb4c8ff),
+      new THREE.Color(0xffd4e8),
+      new THREE.Color(0xa8b4ff),
+      new THREE.Color(0xe8d4ff),
+      new THREE.Color(0x9cc0ff),
+    ];
+    const cloudPositions = [
+      [-1.2, -1.8, 2.5], [-0.3, -2, 2.8], [0.8, -1.6, 2.6], [-0.6, -1.5, 2.9], [1, -2.1, 2.7],
+      [-1.5, -1.4, 2.4], [0.2, -1.9, 2.85], [1.3, -1.3, 2.5], [-0.8, -2.2, 2.6], [0.5, -1.2, 2.95],
+    ];
+    cloudPositions.forEach((pos, i) => {
+      const geo = new THREE.SphereGeometry(0.25 + Math.random() * 0.2, 12, 12);
+      const mat = new THREE.MeshBasicMaterial({
+        color: cloudColors[i % cloudColors.length],
+        transparent: true,
+        opacity: 0.35,
+      });
+      const sphere = new THREE.Mesh(geo, mat);
+      sphere.position.set(pos[0], pos[1], pos[2]);
+      cloudGroup.add(sphere);
+    });
+    scene.add(cloudGroup);
+
+    let handX = 0.5, handY = 0.5;
+    let targetRotY = 0, targetRotX = 0;
+    const smoothHand = { x: 0.5, y: 0.5 };
+
+    document.addEventListener('mousemove', (e) => {
+      handX = e.clientX / window.innerWidth;
+      handY = e.clientY / window.innerHeight;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      smoothHand.x += (handX - smoothHand.x) * 0.08;
+      smoothHand.y += (handY - smoothHand.y) * 0.08;
+      targetRotY = (smoothHand.x - 0.5) * 1.2;
+      targetRotX = (smoothHand.y - 0.5) * 0.6;
+
+      planet.rotation.y += (targetRotY - planet.rotation.y) * 0.05 + 0.003;
+      planet.rotation.x += (targetRotX - planet.rotation.x) * 0.05;
+      nebula.rotation.copy(planet.rotation);
+      nebula.rotation.x += t * 0.05;
+      nebula.rotation.y += t * 0.07;
+
+      cloudGroup.position.x = Math.sin(t * 0.03) * 0.1;
+      cloudGroup.position.y = Math.cos(t * 0.025) * 0.05;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

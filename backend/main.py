@@ -18,6 +18,16 @@ app.add_middleware(
 app.include_router(router)
 
 
+from pydantic import BaseModel
+from typing import List
+
+class OnboardingData(BaseModel):
+    topics: List[str]
+
+@app.post("/onboarding")
+async def handle_onboarding(data: OnboardingData):
+    print("成功收到前端传来的标签:", data.topics)
+    return {"status": "success"}
 @app.get("/")
 async def root():
     return {"message": "ScrollSmart API is running"}

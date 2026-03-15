@@ -68,12 +68,14 @@ export default function TopicSelector({ selected, onChange }: TopicSelectorProps
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.025, type: "spring", stiffness: 300, damping: 20 }}
             whileTap={{ scale: 0.9 }}
-            className="relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 select-none cursor-pointer"
+            className="relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 select-none cursor-pointer backdrop-blur-md"
             style={{
-              backgroundColor: isSelected ? `${color}25` : "rgba(255,255,255,0.05)",
-              border: `1.5px solid ${isSelected ? color : "rgba(255,255,255,0.12)"}`,
-              color: isSelected ? color : "rgba(255,255,255,0.7)",
-              boxShadow: isSelected ? `0 0 12px ${color}50, 0 0 24px ${color}20` : "none",
+              backgroundColor: isSelected ? `${color}35` : "rgba(0,0,0,0.22)",
+              border: `1.5px solid ${isSelected ? color : "rgba(255,255,255,0.25)"}`,
+              color: isSelected ? color : "rgba(255,255,255,0.95)",
+              boxShadow: isSelected ? `0 0 12px ${color}50, 0 0 24px ${color}20` : "0 1px 8px rgba(0,0,0,0.2)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
             }}
           >
             <motion.span

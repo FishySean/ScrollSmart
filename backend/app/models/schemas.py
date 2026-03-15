@@ -21,6 +21,7 @@ class FeedCard(BaseModel):
     card_id: str
     topic: str
     hook_message: str
+    music_name: Optional[str] = None
 
 
 class EngageRequest(BaseModel):

@@ -178,22 +178,27 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
 
   if (loading || !currentCard) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#0a0a1a] gap-4">
-        <div className="w-10 h-10 border-2 border-[#6c63ff] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#9999bb] text-sm">Generating your first card...</p>
+      <div className="h-screen flex flex-col items-center justify-center gap-4 relative z-10">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+          className="w-10 h-10 rounded-full border-2 border-[#6c63ff] border-t-transparent"
+          style={{ boxShadow: "0 0 24px rgba(108,99,255,0.25)" }}
+        />
+        <p className="text-white/50 text-sm">Discovering your first knowledge planet...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-[#0a0a1a] relative">
+    <div className="h-screen w-full overflow-hidden relative z-10">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentCard.card_id}
-          initial={{ y: "100%", scale: 0.95, opacity: 0 }}
+          initial={{ y: "100%", scale: 0.92, opacity: 0 }}
           animate={{ y: 0, scale: 1, opacity: 1 }}
-          exit={{ y: "-100%", scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] }}
+          exit={{ y: "-80%", scale: 0.92, opacity: 0 }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="absolute inset-0"
         >
           <KnowledgeCard
@@ -209,20 +214,27 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Scroll hint at bottom */}
+      {/* Bottom HUD — loading next planet or scroll cue */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1 pointer-events-none">
         {nextLoading ? (
-          <div className="flex items-center gap-2 bg-black/30 rounded-full px-3 py-1.5">
+          <div
+            className="flex items-center gap-2 rounded-full px-3 py-1.5"
+            style={{
+              background: "rgba(0,0,0,0.35)",
+              border: "1px solid rgba(108,99,255,0.2)",
+              boxShadow: "0 0 20px rgba(108,99,255,0.1)",
+            }}
+          >
             <div className="w-3 h-3 border border-[#6c63ff] border-t-transparent rounded-full animate-spin" />
-            <span className="text-[#9999bb] text-xs">Loading next...</span>
+            <span className="text-white/50 text-xs">Next planet...</span>
           </div>
         ) : nextCard ? (
           <motion.div
-            animate={{ y: [0, 5, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-            className="text-white/20"
+            animate={{ y: [0, 5, 0], opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+            className="text-white/25"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </motion.div>
