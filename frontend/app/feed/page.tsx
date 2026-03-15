@@ -120,7 +120,6 @@ export default function FeedPage() {
           </svg>
         </motion.div>
       </motion.div>
-
       <FeedContainer userId={userId} />
     </div>
   );
