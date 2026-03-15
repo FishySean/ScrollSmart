@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import FeedContainer from "@/components/FeedContainer";
+import InterestProfilePanel from "@/components/InterestProfilePanel";
 
 export default function FeedPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -20,6 +21,19 @@ export default function FeedPage() {
       setUserId(id);
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!showProfile) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowProfile(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showProfile]);
 
   if (!mounted || !userId) {
     return (
@@ -51,16 +65,43 @@ export default function FeedPage() {
           transition={{ delay: 0.4 }}
           className="pointer-events-auto"
         >
-          <Link
-            href="/profile"
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/8 border border-white/10 hover:bg-white/15 transition-colors"
+          <button
+            type="button"
+            onClick={() => setShowProfile((prev) => !prev)}
+            aria-pressed={showProfile}
+            className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-all ${
+              showProfile
+                ? "border-[#6c63ff]/60 bg-[#6c63ff]/20 text-white shadow-[0_0_20px_rgba(108,99,255,0.25)]"
+                : "border-white/10 bg-white/8 text-white/80 hover:bg-white/15"
+            }`}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="8" r="4" stroke="white" strokeWidth="1.8" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
-          </Link>
+            <span className="hidden sm:inline">{showProfile ? "Hide Profile" : "Show Profile"}</span>
+          </button>
         </motion.div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 top-20 z-50 hidden px-6 xl:block">
+        <AnimatePresence>
+          {showProfile && userId && (
+            <div className="pointer-events-auto">
+              <InterestProfilePanel userId={userId} variant="split" />
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="pointer-events-none absolute right-4 top-20 z-50 xl:hidden md:right-5">
+        <AnimatePresence>
+          {showProfile && userId && (
+            <div className="pointer-events-auto">
+              <InterestProfilePanel userId={userId} />
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Scroll hint */}

@@ -12,7 +12,7 @@ import os
 import json
 from openai import OpenAI
 from ..models.storage import (
-    apply_engagement_delta, get_profile, update_profile, ALL_TOPICS
+    apply_engagement_delta, get_profile, update_profile
 )
 from ..models.topic_selector import select_next_topic
 

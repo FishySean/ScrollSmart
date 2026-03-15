@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import ActionButtons from "./ActionButtons";
 import ChatInterface from "./ChatInterface";
 
@@ -51,7 +50,6 @@ interface KnowledgeCardProps {
   onMessageSent: () => void;
 }
 
-const TYPEWRITER_SPEED_MS = 28;
 const GO_DEEPER_PROMPT =
   "Please introduce me to a more advanced and deeper topic in this field";
 

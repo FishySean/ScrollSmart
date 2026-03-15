@@ -14,8 +14,8 @@ def test_create_user():
     uid = create_user("test@example.com", ["Fitness", "Psychology"])
     profile = get_profile(uid)
     assert profile is not None
-    assert profile["Fitness"] == 0.7
-    assert profile["Psychology"] == 0.7
+    assert profile["Fitness"] == 0.15
+    assert profile["Psychology"] == 0.15
     assert profile["History"] == 0.1
     print("✓ create_user: profile initialized correctly")
 
@@ -31,8 +31,7 @@ def test_engagement_deltas():
         conversation_depth=2, time_on_card=45
     )
     # delta = 0.15 + 0.20 + 0.10 (2 msgs) + 0.10 (45s) = 0.55
-    # base = 0.7, so raw = 1.25 -> capped at 1.0
-    # But normalization may bring it down
+    # base = 0.15, so raw = 0.70 before any normalization
     assert updated["Neuroscience"] > profile["Neuroscience"]
     print(f"✓ engagement like+deeper+msgs+time: {profile['Neuroscience']:.2f} → {updated['Neuroscience']:.2f}")
 
@@ -81,8 +80,6 @@ def test_topic_selector_distribution():
     ratio = top_count / 200
     print(f"✓ 80/20 selection: top-3 topics got {ratio:.0%} of 200 picks (expect ~40-80%)")
     assert ratio > 0.3, f"Top topics not being selected enough: {ratio:.0%}"
-
-
 def test_normalization():
     profile = {t: 0.95 for t in ALL_TOPICS}
     normalized = _normalize_profile(profile)

@@ -17,7 +17,7 @@ ALL_TOPICS = [
     "Astrophysics",
 ]
 
-COLD_START_WEIGHT = 0.7
+COLD_START_WEIGHT = 0.15
 DEFAULT_WEIGHT = 0.1
 MIN_WEIGHT = 0.05
 MAX_WEIGHT = 1.0
@@ -93,7 +93,7 @@ def apply_engagement_delta(
 
 def _normalize_profile(profile: dict[str, float]) -> dict[str, float]:
     """
-    Soft normalization: prevent all topics from converging to 1.0.
+    Soft normalization: prevent all topics from converging upward too quickly.
     If the average weight exceeds 0.6, scale down proportionally.
     """
     values = list(profile.values())
