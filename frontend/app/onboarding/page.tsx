@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import TopicSelector from "@/components/TopicSelector";
+import RegisterBackground from "@/components/RegisterBackground";
 import { api } from "@/lib/api";
 
 type Step = "register" | "topics";
@@ -49,11 +50,9 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] flex flex-col items-center justify-center px-4 py-12 overflow-y-auto">
-      {/* Background glow */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#6c63ff] opacity-[0.04] rounded-full blur-3xl" />
-      </div>
+    <div className="relative min-h-screen bg-transparent flex flex-col items-center justify-center px-4 py-12 overflow-y-auto">
+      <RegisterBackground />
+      <div className="fixed inset-0 pointer-events-none bg-[rgba(0,0,0,0.18)]" />
 
       <AnimatePresence mode="wait">
         {step === "register" ? (
@@ -63,9 +62,8 @@ export default function OnboardingPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-md"
+            className="relative z-10 w-full max-w-md"
           >
-            {/* Logo */}
             <div className="text-center mb-10">
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
@@ -78,31 +76,56 @@ export default function OnboardingPage() {
                 </div>
                 <span className="text-2xl font-bold text-white tracking-tight">ScrollSmart</span>
               </motion.div>
-              <h1 className="text-3xl font-bold text-white mb-2">Welcome</h1>
-              <p className="text-[#9999bb] text-sm">
+              <h1
+                className="text-3xl font-bold text-white mb-2 welcome-meteor-text"
+                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}
+              >
+                Welcome
+              </h1>
+              <p
+                className="text-white/85 text-sm"
+                style={{ textShadow: "0 1px 10px rgba(0,0,0,0.75)" }}
+              >
                 AI-powered knowledge that learns what you love
               </p>
             </div>
 
-            <form onSubmit={handleRegisterNext} className="space-y-4">
+            <form
+              onSubmit={handleRegisterNext}
+              className="space-y-4 rounded-[28px] border border-white/15 bg-[rgba(8,8,20,0.34)] px-5 py-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+            >
               <div>
-                <label className="block text-sm text-[#9999bb] mb-1.5 font-medium">Email</label>
+                <label className="block text-sm text-white/80 mb-1.5 font-medium">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full bg-[#12122a] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-[#55557a] focus:outline-none focus:border-[#6c63ff] focus:shadow-[0_0_0_3px_rgba(108,99,255,0.15)] transition-all"
+                  className="w-full rounded-xl px-4 py-3 text-white placeholder-white/35 focus:outline-none transition-all"
+                  style={{
+                    backgroundColor: "rgba(0,0,0,0.28)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(10px)",
+                    WebkitBackdropFilter: "blur(10px)",
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-sm text-[#9999bb] mb-1.5 font-medium">Password</label>
+                <label className="block text-sm text-white/80 mb-1.5 font-medium">Password</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-[#12122a] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-[#55557a] focus:outline-none focus:border-[#6c63ff] focus:shadow-[0_0_0_3px_rgba(108,99,255,0.15)] transition-all"
+                  className="w-full rounded-xl px-4 py-3 text-white placeholder-white/35 focus:outline-none transition-all"
+                  style={{
+                    backgroundColor: "rgba(0,0,0,0.28)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                    backdropFilter: "blur(10px)",
+                    WebkitBackdropFilter: "blur(10px)",
+                  }}
                 />
               </div>
 
@@ -132,16 +155,32 @@ export default function OnboardingPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-3xl"
+            className="relative z-10 w-full max-w-4xl"
           >
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">What sparks your curiosity?</h1>
-              <p className="text-[#9999bb] text-sm">
+              <h1
+                className="text-3xl font-bold text-white mb-2"
+                style={{ textShadow: "0 2px 16px rgba(0,0,0,0.8), 0 0 32px rgba(0,0,0,0.5)" }}
+              >
+                What sparks your curiosity?
+              </h1>
+              <p
+                className="text-white/90 text-sm"
+                style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}
+              >
                 Select at least 3 topics — your feed will be tailored to these
               </p>
-              <div className="mt-3 inline-flex items-center gap-2 bg-[#12122a] border border-[#2a2a4a] rounded-full px-4 py-1.5">
+              <div
+                className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-1.5 border border-white/25"
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.25)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
+                }}
+              >
                 <span className="text-[#6c63ff] font-bold text-sm">{selectedTopics.length}</span>
-                <span className="text-[#9999bb] text-xs">selected</span>
+                <span className="text-white/75 text-xs">selected</span>
                 {selectedTopics.length >= 3 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -170,7 +209,13 @@ export default function OnboardingPage() {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => { setStep("register"); setError(""); }}
-                className="px-6 py-3 rounded-xl border border-[#2a2a4a] text-[#9999bb] hover:text-white hover:border-[#4a4a6a] transition-all text-sm"
+                className="px-6 py-3 rounded-xl text-white/95 hover:text-white transition-all text-sm border border-white/25"
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.25)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.25)",
+                }}
               >
                 ← Back
               </motion.button>

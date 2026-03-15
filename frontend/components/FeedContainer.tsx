@@ -149,15 +149,20 @@ export default function FeedContainer({ userId }: FeedContainerProps) {
 
   if (loadingInitial || !currentCard) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-[#0a0a1a] gap-4">
-        <div className="w-10 h-10 border-2 border-[#6c63ff] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#9999bb] text-sm">Generating your first card...</p>
+      <div className="h-screen flex flex-col items-center justify-center gap-4 relative z-10">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+          className="w-10 h-10 rounded-full border-2 border-[#6c63ff] border-t-transparent"
+          style={{ boxShadow: "0 0 24px rgba(108,99,255,0.25)" }}
+        />
+        <p className="text-white/50 text-sm">Generating your first card...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-[100dvh] w-full overflow-hidden bg-[#0a0a1a] relative">
+    <div className="h-[100dvh] w-full overflow-hidden relative z-10">
       <motion.div
         className="flex flex-col h-full w-full"
         drag="y"
